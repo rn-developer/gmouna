@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audio Player</title>
+
+    <style>
+      /* The snackbar - position it at the bottom and in the middle of the screen */
+      #snackbar {
+        visibility: hidden; /* Hidden by default. Visible on click */
+        min-width: 250px; /* Set a default minimum width */
+        margin-left: -125px; /* Divide value of min-width by 2 */
+        background-color: #333; /* Black background color */
+        color: #fff; /* White text color */
+        text-align: center; /* Centered text */
+        border-radius: 2px; /* Rounded borders */
+        padding: 16px; /* Padding */
+        position: fixed; /* Sit on top of the screen */
+        z-index: 1; /* Add a z-index if needed */
+        left: 50%; /* Center the snackbar */
+        bottom: 30px; /* 30px from the bottom */
+      }
+
+      /* Show the snackbar when clicking on a button (class added with JavaScript) */
+      #snackbar.show {
+        visibility: visible; /* Show the snackbar */
+        /* Add animation: Take 0.5 seconds to fade in and out the snackbar.
+  However, delay the fade out process for 2.5 seconds */
+        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+      }
+
+      /* Animations to fade the snackbar in and out */
+      @-webkit-keyframes fadein {
+        from {
+          bottom: 0;
+          opacity: 0;
+        }
+        to {
+          bottom: 30px;
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadein {
+        from {
+          bottom: 0;
+          opacity: 0;
+        }
+        to {
+          bottom: 30px;
+          opacity: 1;
+        }
+      }
+
+      @-webkit-keyframes fadeout {
+        from {
+          bottom: 30px;
+          opacity: 1;
+        }
+        to {
+          bottom: 0;
+          opacity: 0;
+        }
+      }
+
+      @keyframes fadeout {
+        from {
+          bottom: 30px;
+          opacity: 1;
+        }
+        to {
+          bottom: 0;
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- The text areas -->
+    <div>
+      <div>
+        <textarea
+          id="textArea1"
+          defaultvalue=""
+          name="textArea1"
+          rows="4"
+          cols="50"
+          placeholder="Textarea 1"
+        ></textarea>
+        <button onclick="copyToClipBoard('textArea1')">
+          Copy to clipboard
+        </button>
+      </div>
+
+      <div>
+        <textarea
+          id="textArea2"
+          name="textArea2"
+          placeholder="Textarea 2"
+          defaultvalue=""
+          rows="4"
+          cols="50"
+        ></textarea>
+        <button onclick="copyToClipBoard('textArea2')">
+          Copy to clipboard
+        </button>
+      </div>
+    </div>
+
+    <!-- The Audio Player -->
+    <audio
+      id="audioPlayer"
+      data-loopenabled="false"
+      data-loopval="0"
+      autoplay
+      ontimeupdate="audioloop()"
+      controls
+      src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+    >
+      Your browser does not support the
+      <code>audio</code> element.
+    </audio>
+
+    <!-- Misc action buttons -->
+    <div>
+      <button onclick="rewind2Seconds()">Rewind</button>
+      <button id="loopButton" onclick="enableLoop()">Loop last 2 sec</button>
+    </div>
+
+    <!-- Playback selection slider -->
+    <div class="slidecontainer">
+      <p id="playbackSpeed">Playback speed - 1</p>
+      <label>Select Playback Speed</label>
+      <input
+        type="range"
+        min="0"
+        max="2"
+        step="0.1"
+        defaultvalue="1"
+        name="audioPlaybackSelector"
+        id="audioPlaybackRange"
+      />
+    </div>
+
+    <div id="snackbar">Copied to Clipboard</div>
+
+    <script>
+      let audioUrl = window.location.href.split('AudioSource=')[1];
+      let audio = document.getElementById('audioPlayer');
+      let loopButton = document.querySelector('#loopButton');
+      let snackBar = document.getElementById('snackbar');
+
+      audio.src = audioUrl
+        ? audioUrl
+        : 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+      //   Rewind last two seconds of the audio
+      const rewind2Seconds = () => {
+        audio.currentTime = audio.currentTime - 2;
+      };
+
+      //   Set audio playback speed
+      document.querySelector('#audioPlaybackRange').oninput = function () {
+        audio.playbackRate = Number(this.value);
+        document.querySelector(
+          '#playbackSpeed'
+        ).innerHTML = `Playback speed: ${this.value}`;
+      };
+
+      //   Copy text from the selected textarea to clipboard
+      const copyToClipBoard = (elementId) => {
+        let areaId = `#${elementId}`;
+        let str = document.querySelector(areaId).value;
+        const el = document.createElement('textarea');
+        el.value = str;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+
+        // Show snackbar
+        snackBar.className = 'show';
+
+        // After 3 seconds, remove the show class from DIV
+        setTimeout(function () {
+          snackBar.className = snackBar.className.replace('show', '');
+        }, 3000);
+      };
+
+      //   If loop is enabled, loop last 2 seconds
+      function audioloop() {
+        let loopVal = audio.getAttribute('data-loopval');
+        let isEnabled = audio.getAttribute('data-loopenabled');
+
+        if (isEnabled === 'true' && audio.currentTime >= loopVal) {
+          audio.currentTime = loopVal - 2;
+        }
+      }
+
+      //   Enable Loop for last 2 seconds
+      const enableLoop = () => {
+        let isEnabled = audio.getAttribute('data-loopenabled');
+        if (isEnabled === 'false') {
+          loopButton.innerHTML = 'Disable Loop';
+          audio.setAttribute('data-loopenabled', 'true');
+          audio.setAttribute('data-loopval', audio.currentTime);
+        } else {
+          audio.setAttribute('data-loopenabled', 'false');
+          loopButton.innerHTML = 'Loop last 2 sec';
+        }
+      };
+    </script>
+  </body>
+</html>
